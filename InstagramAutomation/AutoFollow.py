@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from instagram.client import InstagramAPI
 import urllib.request as urllib2
 import json, codecs, time
+import Logging, Configuration, threading
+from instagram.client import InstagramAPI
 from instagram.bind import InstagramAPIError
-import Configuration, Logging
-import threading
+
 
 config = Configuration.Configuration('config.ini')
 access_token = config.AccessToken
@@ -16,6 +16,7 @@ api = InstagramAPI(access_token=access_token)
 class AutoFollow:
     USERNAMEFILE = "followedUser.txt"
     InBetweenTime = 180
+    FollowerCount = 0
     
     UFLog = Logging.TimedLogging("UFLog", 1)
     UFLog.start()
@@ -79,23 +80,29 @@ class AutoFollow:
                 print("AutoFollow - Already followed " + username)
                 continue
               
-#             print("AutoFollow - Waiting %s seconds before continuing." % self.InBetweenTime)
-#             time.sleep(self.InBetweenTime)
-#             print("AutoFollow - Done waiting, continuing...")
+            print("AutoFollow - Waiting %s seconds before continuing." % self.InBetweenTime)
+            time.sleep(self.InBetweenTime)
+            print("AutoFollow - Done waiting, continuing...")
               
             # True = real follow, False = test follow
             # Real follow user
             if doRealFollow == True:
                 api.follow_user(user_id=userID)
-                self.WriteNameToFile(username)
                 print("AutoFollow - Real Followed " + username)
             # Test follow user
             else:
-                self.WriteNameToFile(username)
                 print("AutoFollow - Test Followed " + username)   
         
+            self.FollowerCount += 1
+            self.WriteNameToFile(username)
+            
             self.UFLog.create_timed_log(username)
             
+            if self.UFLog.timesup == True:
+                self.UFLog.create_timed_log(str(self.FollowerCount))
+                self.UFLog.endtime = True
+                self.FollowerCount = 0
+
     def AutoFollowMain(self):
         while True:
             self.DoAutoFollow(False)
@@ -114,7 +121,7 @@ class AutoFollow:
 class FollowingUser(threading.Thread):
     
     FOLLOWINGFILE = "followingUser.txt"
-    
+    FollowingCount = 0
     InBetweenTime = 60
     
     # Present follow user
@@ -172,9 +179,16 @@ class FollowingUser(threading.Thread):
                 print("AutoFollow - User already exist!")
                 continue
             
+            self.FollowingCount += 1
+            
             self.WriteFollowingToFile(username)
             self.PFLog.create_timed_log(username)
             
+            if self.PFLog.timesup == True:
+                self.PFLog.create_timed_log(str(self.FollowingCount))
+                self.PFLog.endtime = True
+                self.FollowingCount = 0
+                
     def DoGetFollowing(self):
         try:
             self.GetFollowing()    
@@ -191,7 +205,7 @@ class FollowingUser(threading.Thread):
 if __name__ == "__main__":
     followingUser = FollowingUser()
     followingUser.start()
-    
+     
     autoFollow = AutoFollow()  
     autoFollow.TryAutoLove()
     

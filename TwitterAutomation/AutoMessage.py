@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
+import tweepy, os.path, time
+import Logging, Configuration, threading
 from tweepy import OAuthHandler
-import os.path
-import time
-import tweepy
-import Logging
-import threading
-import Configuration
 
 #Authenticates user 
 def Authenticate ():
@@ -30,7 +26,8 @@ class AutoDirectMsg:
     USERNAMEFILE = 'followerUser.txt'
     
     # Count of all sent message user
-    currentFollowerCount = 0
+    UFFollowerCount = 0
+    DMFollowerCount = 0
     
     # Buffer time before sending message
     InBetweenTime = 60
@@ -89,21 +86,31 @@ class AutoDirectMsg:
             #self.ResetFollower(AllFollowers.screen_name)
             
             # Logging of user that has followed Present
+            self.UFFollowerCount += 1
             self.UFLog.create_timed_log(AllFollowers.screen_name)
+            if self.UFLog.timesup == True:
+                self.UFLog.create_timed_log(str(self.UFFollowerCount))
+                self.UFLog.endtime = True
+                self.UFFollowerCount = 0
             
             # True = real message, False = test message
             # Real message user
             if doRealMssage == True:
                 self.SendDirectMessage(AllFollowers.screen_name)
-                self.WriteFollowerToFile(AllFollowers.screen_name)
                 print("Real sent msg to %s" % AllFollowers.screen_name)
             # Test message user
             else: 
-                # Logging of user that has been sent direct message
-                self.WriteFollowerToFile(AllFollowers.screen_name)
                 print("Test sent msg to %s" % AllFollowers.screen_name)
             
+            self.WriteFollowerToFile(AllFollowers.screen_name)
+            
+            # Logging of user that has been sent direct message
+            self.DMFollowerCount += 1
             self.DMLog.create_timed_log(AllFollowers.screen_name)
+            if self.DMLog.timesup == True:
+                self.DMLog.create_timed_log(str(self.DMFollowerCount))
+                self.DMLog.endtime = True
+                self.DMFollowerCount = 0
             break
       
     # Main function with limit checking
@@ -124,7 +131,7 @@ class AutoDirectMsg:
 class FollowingUser(threading.Thread):
     
     FOLLOWINGFILE = "followingUser.txt"
-    
+    FollowingCount = 0
     InBetweenTime = 60
     
     # Present follow user
@@ -156,13 +163,20 @@ class FollowingUser(threading.Thread):
                 print(friend.screen_name + " already exist in text file")
                 continue
             
-#             print("FollowingUser - Waiting " + str(self.InBetweenTime) + " seconds before continuing")
-#             time.sleep(self.InBetweenTime)
-#             print("FollowingUser - Finished waiting, continuing")
+            print("FollowingUser - Waiting " + str(self.InBetweenTime) + " seconds before continuing")
+            time.sleep(self.InBetweenTime)
+            print("FollowingUser - Finished waiting, continuing")
                
+            self.FollowingCount += 1
+            
             self.WriteFollowingToFile(friend.screen_name)
             self.PFLog.create_timed_log(friend.screen_name)
             
+            if self.PFLog.timesup == True:
+                self.PFLog.create_timed_log(str(self.FollowingCount))
+                self.PFLog.endtime = True
+                self.FollowingCount = 0
+                
     def DoGetFollowing(self):
         try:
             self.GetFollowing()    

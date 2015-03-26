@@ -1,5 +1,4 @@
-import logging, os
-from logging.handlers import TimedRotatingFileHandler
+import os
 from datetime import datetime
 from datetime import timedelta
 import threading
@@ -12,6 +11,7 @@ class TimedLogging(threading.Thread):
         self.interval = interval
         self.time = str(datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %Hh%Mm%Ss'))
         self.timesup = False
+        self.endtime = False
         # Makes folder if it doesn't exist
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -26,8 +26,11 @@ class TimedLogging(threading.Thread):
                 
                 if elapsed >= timedelta(days=self.interval):
                     self.timesup = True
-                    self.time = str(datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %Hh%Mm%Ss'))
-                    start = datetime.now()
+                    if self.endtime == True:
+                        self.timesup = False
+                        self.endtime = False
+                        self.time = str(datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %Hh%Mm%Ss'))
+                        start = datetime.now()
                     
         except OSError:
             pass
@@ -41,6 +44,3 @@ class TimedLogging(threading.Thread):
     def reset_log(self):
         completeName = self.directory + "/" + self.time + ".txt"
         open(completeName, 'w').close()
-            
-        
-                

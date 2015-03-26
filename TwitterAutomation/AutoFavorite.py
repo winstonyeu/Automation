@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-from tweepy import OAuthHandler
-import time
-import tweepy
-from random import randint
+import tweepy, time
 import Logging, Configuration
+from tweepy import OAuthHandler
+from random import randint
          
 #Authenticates user 
 def Authenticate ():

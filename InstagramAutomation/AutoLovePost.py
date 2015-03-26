@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-from instagram.client import InstagramAPI
 import urllib.request as urllib2
-import urllib
-import json, codecs, time
+import urllib, json, codecs, time
+import Logging, Configuration
 from instagram.bind import InstagramAPIError
-import os
-import logging
-from logging.handlers import TimedRotatingFileHandler
-import Configuration
+from instagram.client import InstagramAPI
 
 config = Configuration.Configuration('config.ini')
 access_token = config.AccessToken
@@ -25,34 +21,15 @@ class UserInfo:
         self.MediaID = mediaID
         self.MediaURL = mediaURL
 
-# A class that logs data you specify
-class Logging: 
-    def __init__(self):
-        directory = "LikePostLog"
-        interval = 1
-        
-        self.logger = logging.getLogger("Rotating Log")
-        self.logger.setLevel(logging.INFO)
-        
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-    
-        handler = TimedRotatingFileHandler(directory +"/likePost.log",
-                                           when="H",
-                                           interval=interval)
-        self.logger.addHandler(handler)
-        
-    #----------------------------------------------------------------------
-    def create_timed_rotating_log(self, text):
-        self.logger.info(text)
-            
 # A class to automate loving user's post that loves your post
 # Limited to 2 user post            
 class AutoLovePost:
     USERNAMEFILE = "likedPostUser.txt"
     CurrentMediaID = ""
+    FollowerCount = 0
             
-    logging = Logging()
+    LoveLog = Logging.TimedLogging("LLog", 1)
+    LoveLog.start()
     
     # Writes liked user name into a file (likedUser.txt)
     def WriteNameToFile(self, userInfo):
@@ -168,34 +145,42 @@ class AutoLovePost:
                         print("AutoLovePost - Real Loved: " + user.Username + "-" + user.MediaText + "\n")
                     except UnicodeEncodeError:
                         print("AutoLovePost - Real Loved \n")
-                    
-                    # Checking of current own post id with text file
-                    # Is to write the current own post id into a file
-                    if self.CheckUserDuplicates(ownPostData['data'][0]['id']) == False:
-                        userFile = open(self.USERNAMEFILE, 'w')
-                        userFile.write(ownPostData['data'][0]['id'])
-                        userFile.write('\n')
-                        userFile.close()
-                        
-                        # Is to write the current own post id into a log
-                        self.logging.create_timed_rotating_log('\n')
-                        self.logging.create_timed_rotating_log(ownPostData['data'][0]['link'])
-                        self.logging.create_timed_rotating_log('\n')
-                    
-                    # Logging of users that has been loved
-                    self.logging.create_timed_rotating_log(user.Username + ": " + user.MediaURL)    
-                    
-                    # try catch statement to check if it's the last post by a user
-                    try:   
-                        if likersData[likersData.index(user)+1].Username != user.Username:
-                            print("AutoLovePost - Last post by " + user.Username + ", continuing next user\n")
-                            self.WriteNameToFile(user.Username)
-                    except IndexError:
-                        print("AutoLovePost - Last post by " + user.Username + ", continuing next user\n")
-                        self.WriteNameToFile(user.Username)
                 # Test love post
                 else:
-                    print("AutoLovePost - Test Loved: " + user.Username + "-" + user.MediaText +"\n")
+                    try:
+                        print("AutoLovePost - Test Loved: " + user.Username + "-" + user.MediaText + "\n")
+                    except UnicodeEncodeError:
+                        print("AutoLovePost - Test Loved \n")
+                        
+                # Checking of current own post id with text file
+                # Is to write the current own post id into a file
+                if self.CheckUserDuplicates(ownPostData['data'][0]['id']) == False:
+                    userFile = open(self.USERNAMEFILE, 'w')
+                    userFile.write(ownPostData['data'][0]['id'])
+                    userFile.write('\n')
+                    userFile.close()
+                    
+                    # Is to write the current own post id into a log
+                    self.LoveLog.create_timed_log(ownPostData['data'][0]['link'])
+                
+                self.FollowerCount += 1
+                
+                # Logging of users that has been loved
+                self.LoveLog.create_timed_log(user.Username + ": " + user.MediaURL)    
+                
+                if self.LoveLog.timesup == True:
+                    self.LoveLog.create_timed_log(str(self.FollowerCount))
+                    self.LoveLog.endtime = True
+                    self.FollowerCount = 0
+            
+                # try catch statement to check if it's the last post by a user
+                try:   
+                    if likersData[likersData.index(user)+1].Username != user.Username:
+                        print("AutoLovePost - Last post by " + user.Username + ", continuing next user\n")
+                        self.WriteNameToFile(user.Username)
+                except IndexError:
+                    print("AutoLovePost - Last post by " + user.Username + ", continuing next user\n")
+                    self.WriteNameToFile(user.Username)
         # No user has liked yet
         else:
             print("AutoLovePost - No new user liked yet") 

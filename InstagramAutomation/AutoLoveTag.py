@@ -67,8 +67,8 @@ class AutoLove:
     ENDBUFFERTIME = 15 * 60
     
     keywords = Keywords()
-    LoveLog = Logging.TimedLogging("LLog", 1)
-    LoveLog.start()
+    TagLog = Logging.TimedLogging("TLog", 1)
+    TagLog.start()
     
     # Writes liked user name into a file (likedUser.txt)
     def WriteNameToFile(self, username):
@@ -167,22 +167,19 @@ class AutoLove:
                     print("AutoLoveTag - Real Liked " + username + "-" + caption + "\n")
                 except UnicodeEncodeError:
                     print("AutoLoveTag - Real Liked \n")
-                    
-                self.WriteNameToFile(username)
-                self.logging.create_timed_rotating_log(username + ": " + tag_name)
             # Test love post
             else:
-                self.WriteNameToFile(username)
-                self.keywords.AddKeywordsToDict(tag_name, 1)
-                self.LoveLog.reset_log()
-                for key, value in self.keywords.keywordsDict.items():    
-                    self.LoveLog.create_timed_log(key + ": " + str(value))
-                    
                 try:
                     print("AutoLoveTag - Test Liked " + username + "-" + caption + "\n")
                 except UnicodeEncodeError:
                     print("AutoLoveTag - Test Liked \n")
                 
+                self.WriteNameToFile(username)
+                self.keywords.AddKeywordsToDict(tag_name, 1)
+                self.TagLog.reset_log()
+                
+                for key, value in self.keywords.keywordsDict.items():    
+                    self.TagLog.create_timed_log(key + ": " + str(value))
             break
         
     # Clears data from likedUser text file      
@@ -229,8 +226,8 @@ class AutoLove:
             #Real-time waiting 
             time.sleep(InBetweenTime) 
             
-            if self.LoveLog.timesup == True:
-                self.LoveLog.timesup = False
+            if self.TagLog.timesup == True:
+                self.TagLog.timesup = False
                 self.keywords.ResetKeywordsDict()
 
             print ("AutoLoveTag - Waiting done, continuing... \n") 
